@@ -8,6 +8,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static(".")); // agar bisa buka chatbot.html
 
+// Redirect halaman utama ke chatbot.html
+app.get('/', (req, res) => {
+  res.redirect('/public/chatbot.html');
+});
+
 app.post("/api/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
