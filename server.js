@@ -1,6 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 const app = express();
@@ -9,14 +10,12 @@ app.use(express.json());
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
-  res.sendFile("chatbot.html", { root: "public" });
+  res.sendFile(path.resolve("public/chatbot.html"));
 });
-
 
 app.post("/api/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
-
     if (!userMessage) {
       return res.status(400).json({ error: "Message is required" });
     }
@@ -35,19 +34,14 @@ app.post("/api/chat", async (req, res) => {
         },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: "Anda adalah EcoBot Assistant yang fokus pada lingkungan." },
-            { role: "user", content: userMessage }
-          ],
-          temperature: 0.7,
-          max_tokens: 1024
+          messages: [{ role: "user", content: userMessage }],
+          max_tokens: 512
         })
       }
     );
 
     const data = await response.json();
     res.json(data);
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

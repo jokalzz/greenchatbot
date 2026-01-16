@@ -24,5 +24,11 @@
     "express": "^5.2.1",
     "node-fetch": "^3.3.2"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  }
+
 }
