@@ -6,11 +6,11 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
-app.use(express.static(".")); // agar bisa buka chatbot.html
+app.use(express.static("public")); // Konfigurasi untuk local development
 
-// Redirect halaman utama ke chatbot.html
+// Route halaman utama (hanya untuk local development)
 app.get('/', (req, res) => {
-  res.redirect('/public/chatbot.html');
+  res.sendFile('chatbot.html', { root: 'public' });
 });
 
 app.post("/api/chat", async (req, res) => {
