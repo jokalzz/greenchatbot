@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoBot - Chatbot Perlindungan Lingkungan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ccd7a5 0%, #7ac06b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #29731f 0%, #156319 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            max-width: 80%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .header-action-btn {
+            position: relative;
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #3cbb0a, #54b32e);
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            left: 135vh;  /* Geser ke kanan */
+            top: -40vh; 
+            transition: all 0.3s ease;
+        }
+
+        .header-action-btn:hover {
+            background: linear-gradient(135deg, #3ca335, #248a20);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-action-btn .span {
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .avatar.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .avatar.bot {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .input-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .send-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            border-bottom-left-radius: 5px;
+            max-width: 80px;
+            align-self: flex-start;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .api-config {
+            display: none;
+        }
+
+        .suggestions-container {
+            padding: 15px 20px;
+            background: #f8f9ff;
+            border-top: 1px solid #e9ecef;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .suggestions-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .suggestion-btn {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
+            border: 1px solid #c8e6c9;
+            border-radius: 15px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: #2e7d32;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .suggestion-btn:hover {
+            background: linear-gradient(135deg, #c8e6c9 0%, #e8f5e8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+        }
+
+        .suggestion-btn:active {
+            transform: translateY(0);
+        }
+
+        .suggestion-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .suggestion-text {
+            line-height: 1.3;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            padding: 10px;
+            background: #ffe6e6;
+            border-radius: 5px;
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .api-config {
+                position: relative;
+                margin-bottom: 20px;
+                left: 0;
+                top: 0;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .suggestions-grid {
+                grid-template-columns: 1fr;
+                max-height: 150px;
+            }
+            
+            .suggestion-btn {
+                font-size: 0.8rem;
+                padding: 10px 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="header-actions">
+
+       
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="status-indicator"></div>
+            <h1>🌲 EcoBot Assistant</h1>
+            <p>Chatbot Pelindung Lingkungan & Hutan</p>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="message bot">
+                <div class="avatar bot">AI</div>
+                <div class="message-content">
+                    Halo! Saya adalah EcoBot Assistant 🌿 - chatbot khusus yang membantu Anda belajar tentang perlindungan lingkungan dan hutan. Tanya saya tentang:
+                    
+                    🌳 Konservasi hutan
+                    🌱 Pelestarian lingkungan  
+                    ♻️ Daur ulang & pengurangan sampah
+                    🐾 Perlindungan satwa liar
+                    🌍 Perubahan iklim
+                    
+                    Mari kita jaga bumi bersama-sama! 💚
+                </div>
+            </div>
+        </div>
+
+        <div class="suggestions-container" id="suggestionsContainer">
+            <div class="suggestions-title">💡 Pilih Pertanyaan Populer:</div>
+            <div class="suggestions-grid" id="suggestionsGrid">
+                <!-- Suggestions will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <form class="input-form" id="messageForm">
+                <input type="text" class="message-input" id="messageInput" 
+                       placeholder="Tanya tentang perlindungan lingkungan dan hutan..." autocomplete="off">
+                <button type="submit" class="send-button" id="sendButton">
+                    ➤
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        class GeminiChatbot {
+            constructor() {
+                // ========================================
+                // API KEY GROQ
+                // Dapatkan dari: https://console.groq.com/keys
+                this.apiKey = 'ENTER_YOUR_API_KEY_HERE';
+                this.model = 'llama-3.3-70b-versatile'; // Model Groq
+                // ========================================
+                
+                this.messages = [];
+                this.isLoading = false;
+                this.conversationHistory = []; // Untuk context awareness
+                this.suggestions = [
+                    { icon: '🌳', text: 'Bagaimana cara menanam pohon yang benar?' },
+                    { icon: '♻️', text: 'Tips mengurangi sampah plastik di rumah' },
+                    { icon: '🌱', text: 'Apa itu energi terbarukan?' },
+                    { icon: '🐾', text: 'Mengapa hewan langka perlu dilindungi?' },
+                    { icon: '🌍', text: 'Apa penyebab utama perubahan iklim?' },
+                    { icon: '💧', text: 'Cara menghemat air di kehidupan sehari-hari' },
+                    { icon: '🌿', text: 'Manfaat hutan untuk kehidupan manusia' },
+                    { icon: '🚗', text: 'Dampak polusi udara dan cara menguranginya' },
+                    { icon: '🌾', text: 'Apa itu pertanian organik?' },
+                    { icon: '⚡', text: 'Cara menghemat energi listrik di rumah' },
+                    { icon: '🏔️', text: 'Mengapa deforestasi berbahaya?' },
+                    { icon: '🌊', text: 'Dampak pencemaran laut terhadap ekosistem' },
+                    { icon: '🍃', text: 'Tanaman apa yang bisa membersihkan udara?' },
+                    { icon: '🌸', text: 'Cara membuat kompos dari sampah organik' },
+                    { icon: '🦋', text: 'Peran serangga dalam ekosistem' },
+                    { icon: '🌤️', text: 'Efek rumah kaca dan cara menguranginya' }
+                ];
+                
+                this.initializeElements();
+                this.attachEventListeners();
+                this.renderSuggestions();
+                this.validateApiKey();
+            }
+
+            initializeElements() {
+                this.messagesContainer = document.getElementById('messages');
+                this.messageInput = document.getElementById('messageInput');
+                this.messageForm = document.getElementById('messageForm');
+                this.sendButton = document.getElementById('sendButton');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.errorMessage = document.getElementById('errorMessage') || this.createErrorElement();
+                this.suggestionsContainer = document.getElementById('suggestionsContainer');
+                this.suggestionsGrid = document.getElementById('suggestionsGrid');
+            }
+
+            createErrorElement() {
+                const errorDiv = document.createElement('div');
+                errorDiv.id = 'errorMessage';
+                errorDiv.className = 'error-message';
+                document.body.appendChild(errorDiv);
+                return errorDiv;
+            }
+
+            validateApiKey() {
+                if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE') {
+                    this.showError('⚠️ API Key belum diatur! Kunjungi https://console.groq.com/keys untuk mendapatkan API Key baru.');
+                    this.messageInput.disabled = true;
+                    this.sendButton.disabled = true;
+                }
+            }
+
+            attachEventListeners() {
+                this.messageForm.addEventListener('submit', (e) => this.handleSubmit(e));
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.handleSubmit(e);
+                    }
+                });
+            }
+
+            renderSuggestions() {
+                this.suggestionsGrid.innerHTML = '';
+                
+                this.suggestions.forEach(suggestion => {
+                    const btn = document.createElement('button');
+                    btn.className = 'suggestion-btn';
+                    btn.innerHTML = `
+                        <span class="suggestion-icon">${suggestion.icon}</span>
+                        <span class="suggestion-text">${suggestion.text}</span>
+                    `;
+                    
+                    btn.addEventListener('click', () => {
+                        this.selectSuggestion(suggestion.text);
+                    });
+                    
+                    this.suggestionsGrid.appendChild(btn);
+                });
+            }
+
+            selectSuggestion(text) {
+                this.messageInput.value = text;
+                this.messageInput.focus();
+                
+                // Auto submit the suggestion
+                setTimeout(() => {
+                    this.handleSubmit({ preventDefault: () => {} });
+                }, 100);
+            }
+
+            hideSuggestions() {
+                this.suggestionsContainer.style.display = 'none';
+            }
+
+            showSuggestions() {
+                this.suggestionsContainer.style.display = 'block';
+            }
+
+            async handleSubmit(e) {
+                e.preventDefault();
+                
+                const message = this.messageInput.value.trim();
+                if (!message || this.isLoading) return;
+
+                if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE') {
+                    this.showError('❌ API Key tidak valid! Silakan update API Key Anda dari https://console.groq.com/keys');
+                    return;
+                }
+
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.setLoading(true);
+                
+                // Hide suggestions after first question
+                this.hideSuggestions();
+                // Simpan ke conversation history
+                this.conversationHistory.push({ role: 'user', parts: [{ text: message }] });
+
+                try {
+                    const response = await this.sendToGemini(message);
+                    this.addMessage(response, 'bot');
+                    this.conversationHistory.push({ role: 'model', parts: [{ text: response }] });
+                } catch (error) {
+                    console.error('Error:', error);
+                    const errorMsg = this.parseError(error);
+                    this.addMessage('Maaf, terjadi kesalahan. ' + errorMsg, 'bot');
+                    this.showError('❌ Error: ' + errorMsg);
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            parseError(error) {
+                const message = error.message || '';
+                if (message.includes('API')) return 'Periksa API Key Anda di https://console.groq.com/keys';
+                if (message.includes('401')) return 'API Key tidak valid atau telah kedaluwarsa';
+                if (message.includes('429')) return 'Terlalu banyak permintaan. Coba lagi dalam beberapa detik';
+                if (message.includes('500')) return 'Server Groq sedang bermasalah. Coba lagi nanti';
+                return message;
+            }
+
+            async sendToGemini(message) {
+                // Sistem prompt untuk Groq
+                const systemPrompt = `Anda adalah EcoBot Assistant, chatbot ramah yang membantu edukasi tentang perlindungan lingkungan dan hutan. 
+
+IDENTITAS ANDA:
+- Nama: EcoBot Assistant
+- Misi: Membantu edukasi perlindungan lingkungan dan konservasi hutan
+- Kepribadian: Ramah, informatif, peduli lingkungan, dan antusias mengajak orang untuk menjaga bumi
+
+ATURAN INTERAKSI:
+1. BOLEH menjawab:
+   - Sapaan (halo, hai, selamat pagi, dll) → Balas dengan ramah dan perkenalkan diri singkat
+   - Pertanyaan tentang diri Anda → Jelaskan bahwa Anda adalah EcoBot yang fokus membantu topik lingkungan
+   - Pertanyaan tentang lingkungan, konservasi hutan, pelestarian alam, daur ulang, pengurangan sampah, energi terbarukan, perubahan iklim, perlindungan satwa liar, ekosistem
+   - Ucapan terima kasih → Balas dengan ramah dan tawarkan bantuan lanjutan
+
+2. TIDAK BOLEH menjawab:
+   - Pertanyaan yang sama sekali tidak berkaitan dengan lingkungan/alam (matematika, teknologi umum, hiburan, dll)
+   - Untuk topik di luar lingkungan, arahkan kembali dengan sopan: "Saya fokus membantu topik lingkungan dan hutan. Ada yang ingin Anda tanyakan tentang cara menjaga alam? 🌿"
+
+FORMAT JAWABAN:
+- Untuk sapaan: Balas singkat dan ramah, lalu tawarkan bantuan tentang lingkungan
+- Untuk pertanyaan lingkungan: Gunakan struktur poin, penjelasan jelas, tips praktis, dan emoji relevan
+- Selalu gunakan Bahasa Indonesia yang ramah dan mudah dipahami
+- Tunjukkan antusiasme terhadap perlindungan lingkungan
+
+Respons harus terstruktur dengan baik dan mudah dibaca.`;
+
+                const url = 'https://api.groq.com/openai/v1/chat/completions';
+                
+                // Build messages array untuk Groq (format OpenAI-compatible)
+                const messages = [
+                    {
+                        role: 'system',
+                        content: systemPrompt
+                    }
+                ];
+                
+                // Tambahkan conversation history
+                this.conversationHistory.forEach(msg => {
+                    messages.push({
+                        role: msg.role === 'model' ? 'assistant' : msg.role,
+                        content: msg.parts[0].text
+                    });
+                });
+                
+                // Tambahkan pesan user terbaru
+                messages.push({
+                    role: 'user',
+                    content: message
+                });
+
+                const requestBody = {
+                    model: this.model,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    top_p: 0.9
+                };
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiKey}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const responseText = data.choices[0].message.content;
+                    return responseText;
+                } else if (data.error) {
+                    throw new Error(data.error.message);
+                } else {
+                    throw new Error('Tidak ada respons yang valid dari Groq');
+                }
+            }
+
+            addMessage(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = `avatar ${sender}`;
+                avatar.textContent = sender === 'user' ? 'You' : 'AI';
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                
+                // Better formatting untuk response dari Gemini
+                let temp = content
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // Bold
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>') // Italic
+                    .replace(/^\s*[-•]\s+/gm, '• ') // Bullet points
+                    .replace(/^\s*\d+\.\s+/gm, (match) => match); // Numbered lists
+                
+                messageContent.innerHTML = temp.replace(/\n/g, '<br>');
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+                
+                this.messagesContainer.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            setLoading(loading) {
+                this.isLoading = loading;
+                this.sendButton.disabled = loading;
+                this.messageInput.disabled = loading;
+                
+                if (loading) {
+                    this.typingIndicator.style.display = 'block';
+                    this.scrollToBottom();
+                } else {
+                    this.typingIndicator.style.display = 'none';
+                }
+            }
+
+            scrollToBottom() {
+                setTimeout(() => {
+                    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                }, 100);
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    this.hideError();
+                }, 5000);
+            }
+
+            hideError() {
+                this.errorMessage.style.display = 'none';
+            }
+        }
+
+        // Initialize chatbot when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new GeminiChatbot();
+        });
+    </script>
+</body>
+</html>
