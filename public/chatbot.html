@@ -422,8 +422,8 @@
     <script>
         class GeminiChatbot {
             constructor() {
-                // Backend API untuk chat
-                this.backendUrl = 'http://localhost:3000/api/chat';
+                // Backend API untuk chat (gunakan URL relatif agar bisa di Railway)
+                this.backendUrl = '/api/chat';
                 
                 this.messages = [];
                 this.isLoading = false;
