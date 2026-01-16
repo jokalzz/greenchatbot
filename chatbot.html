@@ -422,12 +422,8 @@
     <script>
         class GeminiChatbot {
             constructor() {
-                // ========================================
-                // API KEY GROQ
-                // Dapatkan dari: https://console.groq.com/keys
-                this.apiKey = 'ENTER_YOUR_API_KEY_HERE';
-                this.model = 'llama-3.3-70b-versatile'; // Model Groq
-                // ========================================
+                // Backend API untuk chat
+                this.backendUrl = 'http://localhost:3000/api/chat';
                 
                 this.messages = [];
                 this.isLoading = false;
@@ -477,11 +473,7 @@
             }
 
             validateApiKey() {
-                if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE') {
-                    this.showError('⚠️ API Key belum diatur! Kunjungi https://console.groq.com/keys untuk mendapatkan API Key baru.');
-                    this.messageInput.disabled = true;
-                    this.sendButton.disabled = true;
-                }
+                // Tidak perlu validasi API key, semua ditangani backend
             }
 
             attachEventListeners() {
@@ -537,11 +529,6 @@
                 const message = this.messageInput.value.trim();
                 if (!message || this.isLoading) return;
 
-                if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE') {
-                    this.showError('❌ API Key tidak valid! Silakan update API Key Anda dari https://console.groq.com/keys');
-                    return;
-                }
-
                 this.addMessage(message, 'user');
                 this.messageInput.value = '';
                 this.setLoading(true);
@@ -552,7 +539,7 @@
                 this.conversationHistory.push({ role: 'user', parts: [{ text: message }] });
 
                 try {
-                    const response = await this.sendToGemini(message);
+                    const response = await this.sendToBackend(message);
                     this.addMessage(response, 'bot');
                     this.conversationHistory.push({ role: 'model', parts: [{ text: response }] });
                 } catch (error) {
@@ -567,97 +554,44 @@
 
             parseError(error) {
                 const message = error.message || '';
-                if (message.includes('API')) return 'Periksa API Key Anda di https://console.groq.com/keys';
+                if (message.includes('localhost')) return 'Backend tidak berjalan. Jalankan: node server.js';
                 if (message.includes('401')) return 'API Key tidak valid atau telah kedaluwarsa';
                 if (message.includes('429')) return 'Terlalu banyak permintaan. Coba lagi dalam beberapa detik';
-                if (message.includes('500')) return 'Server Groq sedang bermasalah. Coba lagi nanti';
+                if (message.includes('500')) return 'Server error. Cek log backend';
+                if (message.includes('GROQ_API_KEY')) return 'API Key belum diatur di .env file';
                 return message;
             }
 
-            async sendToGemini(message) {
-                // Sistem prompt untuk Groq
-                const systemPrompt = `Anda adalah EcoBot Assistant, chatbot ramah yang membantu edukasi tentang perlindungan lingkungan dan hutan. 
-
-IDENTITAS ANDA:
-- Nama: EcoBot Assistant
-- Misi: Membantu edukasi perlindungan lingkungan dan konservasi hutan
-- Kepribadian: Ramah, informatif, peduli lingkungan, dan antusias mengajak orang untuk menjaga bumi
-
-ATURAN INTERAKSI:
-1. BOLEH menjawab:
-   - Sapaan (halo, hai, selamat pagi, dll) → Balas dengan ramah dan perkenalkan diri singkat
-   - Pertanyaan tentang diri Anda → Jelaskan bahwa Anda adalah EcoBot yang fokus membantu topik lingkungan
-   - Pertanyaan tentang lingkungan, konservasi hutan, pelestarian alam, daur ulang, pengurangan sampah, energi terbarukan, perubahan iklim, perlindungan satwa liar, ekosistem
-   - Ucapan terima kasih → Balas dengan ramah dan tawarkan bantuan lanjutan
-
-2. TIDAK BOLEH menjawab:
-   - Pertanyaan yang sama sekali tidak berkaitan dengan lingkungan/alam (matematika, teknologi umum, hiburan, dll)
-   - Untuk topik di luar lingkungan, arahkan kembali dengan sopan: "Saya fokus membantu topik lingkungan dan hutan. Ada yang ingin Anda tanyakan tentang cara menjaga alam? 🌿"
-
-FORMAT JAWABAN:
-- Untuk sapaan: Balas singkat dan ramah, lalu tawarkan bantuan tentang lingkungan
-- Untuk pertanyaan lingkungan: Gunakan struktur poin, penjelasan jelas, tips praktis, dan emoji relevan
-- Selalu gunakan Bahasa Indonesia yang ramah dan mudah dipahami
-- Tunjukkan antusiasme terhadap perlindungan lingkungan
-
-Respons harus terstruktur dengan baik dan mudah dibaca.`;
-
-                const url = 'https://api.groq.com/openai/v1/chat/completions';
-                
-                // Build messages array untuk Groq (format OpenAI-compatible)
-                const messages = [
-                    {
-                        role: 'system',
-                        content: systemPrompt
-                    }
-                ];
-                
-                // Tambahkan conversation history
-                this.conversationHistory.forEach(msg => {
-                    messages.push({
-                        role: msg.role === 'model' ? 'assistant' : msg.role,
-                        content: msg.parts[0].text
+            async sendToBackend(message) {
+                try {
+                    const response = await fetch(this.backendUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message
+                        })
                     });
-                });
-                
-                // Tambahkan pesan user terbaru
-                messages.push({
-                    role: 'user',
-                    content: message
-                });
 
-                const requestBody = {
-                    model: this.model,
-                    messages: messages,
-                    temperature: 0.7,
-                    max_tokens: 1024,
-                    top_p: 0.9
-                };
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+                        throw new Error(errorMessage);
+                    }
 
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.apiKey}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
-                    throw new Error(errorMessage);
-                }
-
-                const data = await response.json();
-                
-                if (data.choices && data.choices[0] && data.choices[0].message) {
-                    const responseText = data.choices[0].message.content;
-                    return responseText;
-                } else if (data.error) {
-                    throw new Error(data.error.message);
-                } else {
-                    throw new Error('Tidak ada respons yang valid dari Groq');
+                    const data = await response.json();
+                    
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        const responseText = data.choices[0].message.content;
+                        return responseText;
+                    } else if (data.error) {
+                        throw new Error(data.error.message);
+                    } else {
+                        throw new Error('Tidak ada respons yang valid dari server');
+                    }
+                } catch (error) {
+                    throw new Error(error.message || 'Gagal menghubungi server. Pastikan backend sudah berjalan di http://localhost:3000');
                 }
             }
 
